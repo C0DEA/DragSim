@@ -2325,134 +2325,29 @@
             debugSphere.position.y = 5; // Position above ground to be visible
             group.add(debugSphere);
             
+            // Add simple tree leaves for immediate visibility
+            const leavesGeometry = new THREE.ConeGeometry(3, 5, 8);
+            const leavesMaterial = new THREE.MeshBasicMaterial({ color: 0x00aa00 });
+            const leaves = new THREE.Mesh(leavesGeometry, leavesMaterial);
+            leaves.position.y = 10;
+            group.add(leaves);
+            
             console.debug(`Creating palm tree #${index}`);
             
-            // Randomly select which palm tree model to use
-            // 0 = Curly_palm, 1 = Date_palm
-            const palmType = Math.floor(Math.random() * 2);
-            const palmTypeNames = ['Curly_palm', 'Date_palm'];
-            console.debug(`Selected palm type: ${palmTypeNames[palmType]}`);
+            // Position the palm tree first so it's visible immediately
+            positionPalmTree(group, index);
+            scene.add(group);
             
-            // Model paths - use absolute paths from root
-            const palmModels = [
-                '/assets/Curly_palm/scene.gltf',  // Curly palm
-                '/assets/Date_palm/scene.gltf'    // Date palm
-            ];
+            // Then try to load the model asynchronously
+            setTimeout(() => {
+                loadPalmTreeModel(group, index);
+            }, index * 100); // Stagger loading to prevent overwhelming the browser
             
-            // Check if we need to add base URL for Vercel
-            const baseUrl = window.location.hostname.includes('vercel.app') ? 
-                            window.location.origin : '';
-            const modelPath = baseUrl + palmModels[palmType];
-            
-            console.debug(`Loading palm model from path: ${modelPath}`);
-            
-            // Different scale ranges for each tree type as requested
-            // Curly palm: Scale between 3-6
-            // Date palm: Scale between 1-2
-            const scaleRanges = [
-                { min: 3.0, max: 6.0 },  // Curly palm scale range
-                { min: 1.0, max: 2.0 }   // Date palm scale range
-            ];
-            
-            // Generate random scale within the appropriate range for the selected tree type
-            const scaleValue = scaleRanges[palmType].min + Math.random() * (scaleRanges[palmType].max - scaleRanges[palmType].min);
-            console.debug(`Generated ${palmTypeNames[palmType]} scale: ${scaleValue.toFixed(2)}`);
-            
-            // Create new loaders for each model to avoid conflicts
-            const gltfLoader = new THREE.GLTFLoader();
-            
-            // Make sure DRACO decoder is properly configured
-            const dracoLoader = new THREE.DRACOLoader();
-            dracoLoader.setDecoderPath('https://www.gstatic.com/draco/v1/decoders/');
-            gltfLoader.setDRACOLoader(dracoLoader);
-            
-            // Add a timeout to cancel loading if it takes too long
-            let loadingTimeout = setTimeout(() => {
-                console.error(`Loading timeout for palm tree #${index}`);
-                createFallbackPalmTree(group);
-            }, 10000); // 10 second timeout
-            
-            // Load the model with fetch first to ensure it exists
-            fetch(modelPath)
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
-                    console.debug(`Fetch successful for ${modelPath}, proceeding with GLTF loading`);
-                    
-                    // Now load with GLTFLoader
-                    gltfLoader.load(
-                        modelPath,
-                        function(gltf) {
-                            // Clear timeout since loading succeeded
-                            clearTimeout(loadingTimeout);
-                            console.debug(`Successfully loaded palm model #${index}!`);
-                            
-                            try {
-                                const palmModel = gltf.scene;
-                                
-                                // Apply scale and rotation adjustments
-                                palmModel.scale.set(scaleValue, scaleValue, scaleValue);
-                                console.debug(`Applied scale: ${scaleValue}`);
-                                
-                                // Random rotation for variety
-                                palmModel.rotation.y = Math.random() * Math.PI * 2;
-                                
-                                // Keep Y position static at 0 as requested
-                                palmModel.position.y = 0;
-                                
-                                // Remove debug sphere once model is loaded
-                                group.remove(debugSphere);
-                                
-                                // Check for meshes in the model
-                                let meshCount = 0;
-                                palmModel.traverse(function(node) {
-                                    if (node.isMesh) {
-                                        meshCount++;
-                                        node.castShadow = true;
-                                        node.receiveShadow = true;
-                                    }
-                                });
-                                
-                                if (meshCount === 0) {
-                                    throw new Error("Model has no meshes");
-                                }
-                                
-                                console.debug(`Palm model contains ${meshCount} meshes`);
-                                
-                                // Add model to group
-                                group.add(palmModel);
-                            } catch (error) {
-                                console.error(`Error processing palm tree model #${index}:`, error);
-                                createFallbackPalmTree(group);
-                            }
-                        },
-                        function(xhr) {
-                            // Progress callback
-                            if (xhr.lengthComputable) {
-                                const percentComplete = Math.round((xhr.loaded / xhr.total) * 100);
-                                console.debug(`Palm #${index} loading progress: ${percentComplete}%`);
-                            } else {
-                                // If length is not computable, just show loaded bytes
-                                console.debug(`Palm #${index} loading progress: ${(xhr.loaded / 1024).toFixed(2)} KB loaded`);
-                            }
-                        },
-                        function(error) {
-                            // Clear timeout since loading failed
-                            clearTimeout(loadingTimeout);
-                            console.error(`Error loading palm tree model #${index}:`, error);
-                            createFallbackPalmTree(group);
-                        }
-                    );
-                })
-                .catch(error => {
-                    // Clear timeout since loading failed
-                    clearTimeout(loadingTimeout);
-                    console.error(`Fetch error for palm tree model #${index}:`, error);
-                    createFallbackPalmTree(group);
-                });
-            
-            // Position the palm tree - keeping the same positioning logic as the original
+            return group;
+        }
+        
+        // Separate function to position palm trees
+        function positionPalmTree(group, index) {
             let x, z;
             
             if (index < 16) {
@@ -2481,56 +2376,141 @@
             
             console.debug(`Positioning palm #${index} at x:${x.toFixed(2)}, z:${z.toFixed(2)}`);
             group.position.set(x, 0, z);
-            scene.add(group);
         }
         
-        // Fallback function to create a simple palm tree if model loading fails
-        function createFallbackPalmTree(group) {
-            // Simple trunk
-            const trunkGeometry = new THREE.CylinderGeometry(0.35, 0.5, 7.5, 8);
+        // Separate function to load palm tree models
+        function loadPalmTreeModel(group, index) {
+            try {
+                // Randomly select which palm tree model to use
+                // 0 = Curly_palm, 1 = Date_palm
+                const palmType = Math.floor(Math.random() * 2);
+                const palmTypeNames = ['Curly_palm', 'Date_palm'];
+                
+                // Create a custom simple model instead of loading external models
+                createCustomPalmTree(group, palmType);
+                
+                // Remove the debug sphere and temporary leaves
+                group.children.forEach(child => {
+                    if (child.geometry && 
+                        (child.geometry.type === 'SphereGeometry' || 
+                         child.geometry.type === 'ConeGeometry')) {
+                        group.remove(child);
+                    }
+                });
+                
+                return true;
+            } catch (error) {
+                console.error(`Error creating palm tree model #${index}:`, error);
+                return false;
+            }
+        }
+        
+        // Create a custom palm tree instead of loading external models
+        function createCustomPalmTree(group, palmType) {
+            // Remove any existing models
+            while (group.children.length > 0) {
+                group.remove(group.children[0]);
+            }
+            
+            // Different scale ranges for each tree type
+            // Curly palm: Scale between 3-6
+            // Date palm: Scale between 1-2
+            const scaleRanges = [
+                { min: 3.0, max: 6.0 },  // Curly palm scale range
+                { min: 1.0, max: 2.0 }   // Date palm scale range
+            ];
+            
+            // Generate random scale within the appropriate range
+            const scaleRange = scaleRanges[palmType];
+            const scaleValue = scaleRange.min + Math.random() * (scaleRange.max - scaleRange.min);
+            
+            // Random rotation for variety
+            const rotationY = Math.random() * Math.PI * 2;
+            
+            // Create trunk
+            const trunkHeight = palmType === 0 ? 8 : 12; // Curly palms shorter, Date palms taller
+            const trunkGeometry = new THREE.CylinderGeometry(0.4, 0.6, trunkHeight, 8);
             const trunkMaterial = new THREE.MeshStandardMaterial({ 
-                color: 0xa05a2c,
-                roughness: 0.75,
-                metalness: 0.1,
-                emissive: 0x3a2816,
-                emissiveIntensity: 0.2
+                color: 0x8B4513, // Brown trunk
+                roughness: 0.8,
+                metalness: 0.0
             });
             const trunk = new THREE.Mesh(trunkGeometry, trunkMaterial);
-            trunk.position.y = 3.75;
+            trunk.position.y = trunkHeight / 2;
             trunk.castShadow = true;
+            trunk.receiveShadow = true;
             group.add(trunk);
             
-            // Simple fronds
-            for (let i = 0; i < 7; i++) {
-                const frondShape = new THREE.Shape();
-                frondShape.moveTo(0, 0);
-                frondShape.quadraticCurveTo(1, 0.5, 4, 0);
-                frondShape.quadraticCurveTo(1, -0.5, 0, 0);
+            // Create leaves
+            const leafCount = palmType === 0 ? 12 : 18; // Curly palms have fewer leaves
+            const leafColor = palmType === 0 ? 0x00AA00 : 0x008800; // Different green for each type
+            
+            for (let i = 0; i < leafCount; i++) {
+                const angle = (i / leafCount) * Math.PI * 2;
+                const leafGroup = new THREE.Group();
                 
-                const extrudeSettings = {
-                    steps: 1,
-                    depth: 0.1,
-                    bevelEnabled: false
-                };
-                
-                const frondGeometry = new THREE.ExtrudeGeometry(frondShape, extrudeSettings);
-                const frondMaterial = new THREE.MeshStandardMaterial({ 
-                    color: 0x00aa00,
-                    roughness: 0.8,
-                    metalness: 0.1,
-                    emissive: 0x003300,
-                    emissiveIntensity: 0.15
+                // Create leaf stem
+                const stemLength = palmType === 0 ? 4 : 6;
+                const stemGeometry = new THREE.CylinderGeometry(0.1, 0.2, stemLength, 4);
+                const stemMaterial = new THREE.MeshStandardMaterial({
+                    color: 0x8B4513,
+                    roughness: 0.7
                 });
-                const frond = new THREE.Mesh(frondGeometry, frondMaterial);
-                frond.position.set(0, 7.5, 0);
-                frond.rotation.set(
-                    Math.random() * 0.5 - 0.25,
-                    (Math.PI * 2 / 7) * i,
-                    Math.random() * 0.2 + 0.3
-                );
-                frond.castShadow = true;
-                group.add(frond);
+                const stem = new THREE.Mesh(stemGeometry, stemMaterial);
+                
+                // Position and rotate stem
+                stem.position.y = stemLength / 2;
+                stem.rotation.x = palmType === 0 ? Math.PI / 4 : Math.PI / 6; // Curly palms more horizontal
+                stem.castShadow = true;
+                leafGroup.add(stem);
+                
+                // Create leaf
+                const leafWidth = palmType === 0 ? 1.5 : 1.0;
+                const leafLength = palmType === 0 ? 4 : 6;
+                
+                const leafShape = new THREE.Shape();
+                leafShape.moveTo(0, 0);
+                leafShape.lineTo(leafWidth/2, 0);
+                leafShape.lineTo(leafWidth/3, leafLength/2);
+                leafShape.lineTo(0, leafLength);
+                leafShape.lineTo(-leafWidth/3, leafLength/2);
+                leafShape.lineTo(-leafWidth/2, 0);
+                leafShape.lineTo(0, 0);
+                
+                const leafGeometry = new THREE.ShapeGeometry(leafShape);
+                const leafMaterial = new THREE.MeshStandardMaterial({
+                    color: leafColor,
+                    roughness: 0.8,
+                    side: THREE.DoubleSide
+                });
+                const leaf = new THREE.Mesh(leafGeometry, leafMaterial);
+                
+                // Position leaf at the end of stem
+                leaf.position.y = stemLength;
+                leaf.rotation.x = -Math.PI / 2;
+                leaf.castShadow = true;
+                leafGroup.add(leaf);
+                
+                // Position the leaf group at the top of the trunk
+                leafGroup.position.y = trunkHeight;
+                
+                // Rotate around trunk
+                leafGroup.rotation.y = angle;
+                
+                // Add random variation
+                leafGroup.rotation.x += (Math.random() - 0.5) * 0.3;
+                leafGroup.rotation.z += (Math.random() - 0.5) * 0.3;
+                
+                group.add(leafGroup);
             }
+            
+            // Apply scale to entire tree
+            group.scale.set(scaleValue, scaleValue, scaleValue);
+            
+            // Apply random rotation
+            group.rotation.y = rotationY;
+            
+            return group;
         }
         
         function createCar() {
