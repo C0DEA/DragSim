@@ -573,7 +573,7 @@
         #settings-button {
             position: absolute;
             bottom: 20px;
-            left: 50%;
+            left: calc(50% - 60px); /* Adjusted to make space for feedback button */
             transform: translateX(-50%);
             padding: 10px 15px;
             font-size: 16px;
@@ -586,6 +586,26 @@
             text-shadow: 1px 1px 2px black;
         }
         #settings-button:hover {
+            background-color: #ff7730;
+        }
+        
+        /* Feedback Button */
+        #feedback-button {
+            position: absolute;
+            bottom: 20px;
+            left: calc(50% + 60px); /* Positioned to the right of settings button */
+            transform: translateX(-50%);
+            padding: 10px 15px;
+            font-size: 16px;
+            background-color: #ff5500;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            z-index: 150;
+            text-shadow: 1px 1px 2px black;
+        }
+        #feedback-button:hover {
             background-color: #ff7730;
         }
         
@@ -960,11 +980,47 @@
                     </div>
                     <button class="car-select-button" data-car="patrol">Select Patrol</button>
                 </div>
+                
+                <div class="car-option" data-car="dragster">
+                    <h3>Top Fuel Dragster</h3>
+                    <div class="car-model-viewer" id="dragster-model-viewer"></div>
+                    <div class="car-specs-grid">
+                        <div class="car-spec-item">
+                            <span class="car-spec-label">Power</span>
+                            <span class="car-spec-value">11000 HP</span>
+                        </div>
+                        <div class="car-spec-item">
+                            <span class="car-spec-label">Torque</span>
+                            <span class="car-spec-value">8800 Nm</span>
+                        </div>
+                        <div class="car-spec-item">
+                            <span class="car-spec-label">0-60 mph</span>
+                            <span class="car-spec-value">0.8 sec</span>
+                        </div>
+                        <div class="car-spec-item">
+                            <span class="car-spec-label">1/4 Mile</span>
+                            <span class="car-spec-value">3.7 sec</span>
+                        </div>
+                        <div class="car-spec-item">
+                            <span class="car-spec-label">Top Speed</span>
+                            <span class="car-spec-value">530 kph</span>
+                        </div>
+                        <div class="car-spec-item">
+                            <span class="car-spec-label">Weight</span>
+                            <span class="car-spec-value">1100 kg</span>
+                        </div>
+                        <div class="car-spec-item">
+                            <span class="car-spec-label">Drivetrain</span>
+                            <span class="car-spec-value">RWD</span>
+                        </div>
+                    </div>
+                    <button class="car-select-button" data-car="dragster">Select Dragster</button>
+                </div>
             </div>
         </div>
         
         <!-- Light status indicator -->
-        <div id="light-status" style="position: absolute; top: 80px; width: 100%; text-align: center; color: white; font-size: 18px; z-index: 100; text-shadow: 1px 1px 2px black;">WAIT FOR GREEN LIGHT!</div>
+        <div id="light-status" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 100%; text-align: center; color: white; font-size: 45px; z-index: 100; text-shadow: 2px 2px 4px black; font-weight: bold;">WAIT FOR GREEN LIGHT!</div>
         
         <!-- Quarter mile time display -->
         <div id="quarter-mile-time">
@@ -1008,6 +1064,11 @@
         <!-- Settings Button -->
         <div id="settings-button">
             <span>Settings</span>
+        </div>
+        
+        <!-- Feedback Button -->
+        <div id="feedback-button">
+            <span>Feedback & Ideas</span>
         </div>
         
         <!-- Settings Popup -->
@@ -1275,6 +1336,31 @@
             drivetrain: "AWD" // Added drivetrain parameter
         };
         
+        // Top Fuel Dragster specs - authentic competition specifications
+        const DRAGSTER_SPECS = {
+            maxRPM: 9500,
+            idleRPM: 950,
+            redlineRPM: 8800,
+            maxTorque: 8800, // Nm (approximately 6,500 lb-ft)
+            torquePeakRPM: 7500,
+            powerPeakRPM: 8000,
+            maxPower: 11000, // HP (competition top fuel dragsters produce 10,000-11,000 HP)
+            // Single gear direct drive with clutch
+            gearRatios: [
+                0,      // Neutral
+                1.0     // Direct drive
+            ],
+            finalDriveRatio: 3.20,
+            wheelDiameter: 0.90, // meters (large rear tires)
+            dragCoefficient: 0.7, // High due to massive wing and parachute
+            frontalArea: 1.8, // m² (narrow frontal area)
+            weight: 1100, // kg (approximately 2,330 lbs with driver)
+            maxSpeed: 530, // kph (approximately 330 mph)
+            zeroToSixty: 0.8, // seconds (0-60 mph in less than 1 second)
+            drivetrain: "RWD", // Rear-wheel drive
+            quarterMileTime: 3.7 // seconds (typical top fuel quarter mile times)
+        };
+        
         // Current car specs - defaults to Mustang
         let currentCarSpecs = MUSTANG_SPECS;
         let currentCarName = "2024 Ford Mustang GT";
@@ -1369,7 +1455,7 @@
             scene.add(ambientLight);
             
             const directionalLight = new THREE.DirectionalLight(0xffffff, 1.8); // Pure white sunlight
-            directionalLight.position.set(-100, 200, 200); // Position for afternoon sun angle
+            directionalLight.position.set(-25, 80, 25); // Further refined for better shadow alignment
             directionalLight.castShadow = true;
             directionalLight.shadow.camera.left = -500;
             directionalLight.shadow.camera.right = 500;
@@ -1379,8 +1465,20 @@
             directionalLight.shadow.camera.far = 1000;
             directionalLight.shadow.mapSize.width = 4096; // Detailed shadows
             directionalLight.shadow.mapSize.height = 4096;
-            directionalLight.shadow.bias = -0.001;
-            directionalLight.shadow.normalBias = 0.02;
+            directionalLight.shadow.bias = -0.00005; // Further reduced to minimize offset
+            directionalLight.shadow.normalBias = 0.005; // Fine-tuned for better alignment
+            
+            // Alternative shadow projection type for more precise shadows
+            directionalLight.shadow.camera.projection = THREE.OrthographicCamera;
+            
+            // Add light target for proper shadow direction
+            directionalLight.target = new THREE.Object3D();
+            scene.add(directionalLight.target);
+            
+            // Create a helper to visualize the light position and shadow camera (comment out in production)
+            // const helper = new THREE.CameraHelper(directionalLight.shadow.camera);
+            // scene.add(helper);
+            
             scene.add(directionalLight);
             
             // Add subtle hemisphere light for environment lighting
@@ -2217,56 +2315,105 @@
         }
         
         function createPalmTree(index) {
-            // Create a palm tree with trunk and fronds - scaled down by 50%
+            // Create a group to hold the model
             const group = new THREE.Group();
             
-            // Trunk - 50% smaller
-            const trunkGeometry = new THREE.CylinderGeometry(0.35, 0.5, 7.5, 8); // Reduced from (0.7, 1, 15)
-            const trunkMaterial = new THREE.MeshStandardMaterial({ 
-                color: 0xa05a2c, // Richer, more vibrant brown
-                roughness: 0.75,
-                metalness: 0.1,
-                emissive: 0x3a2816,
-                emissiveIntensity: 0.2
-            });
-            const trunk = new THREE.Mesh(trunkGeometry, trunkMaterial);
-            trunk.position.y = 3.75; // Reduced from 7.5
-            trunk.castShadow = true;
-            group.add(trunk);
+            // Add a debug sphere to show where the palm tree should be
+            const debugGeometry = new THREE.SphereGeometry(2, 16, 16);
+            const debugMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+            const debugSphere = new THREE.Mesh(debugGeometry, debugMaterial);
+            debugSphere.position.y = 5; // Position above ground to be visible
+            group.add(debugSphere);
             
-            // Fronds - 50% smaller
-            for (let i = 0; i < 7; i++) {
-                const frondShape = new THREE.Shape();
-                frondShape.moveTo(0, 0);
-                frondShape.quadraticCurveTo(1, 0.5, 4, 0); // Reduced from (2, 1, 8)
-                frondShape.quadraticCurveTo(1, -0.5, 0, 0); // Reduced from (2, -1)
-                
-                const extrudeSettings = {
-                    steps: 1,
-                    depth: 0.1, // Reduced from 0.2
-                    bevelEnabled: false
-                };
-                
-                const frondGeometry = new THREE.ExtrudeGeometry(frondShape, extrudeSettings);
-                const frondMaterial = new THREE.MeshStandardMaterial({ 
-                    color: 0x00aa00, // Brighter, more vibrant green
-                    roughness: 0.8,
-                    metalness: 0.1,
-                    emissive: 0x003300,
-                    emissiveIntensity: 0.15
-                });
-                const frond = new THREE.Mesh(frondGeometry, frondMaterial);
-                frond.position.set(0, 7.5, 0); // Reduced from 15
-                frond.rotation.set(
-                    Math.random() * 0.5 - 0.25, // Random tilt
-                    (Math.PI * 2 / 7) * i,      // Even spacing around trunk
-                    Math.random() * 0.2 + 0.3   // Random upward angle
-                );
-                frond.castShadow = true;
-                group.add(frond);
-            }
+            console.debug(`Creating palm tree #${index}`);
             
-            // Position the palm tree
+            // Randomly select which palm tree model to use
+            // 0 = Curly_palm, 1 = Date_palm
+            const palmType = Math.floor(Math.random() * 2);
+            console.debug(`Selected palm type: ${palmType === 0 ? 'Curly_palm' : 'Date_palm'}`);
+            
+            // Model paths - use absolute paths to ensure correct loading
+            const palmModels = [
+                './assets/Curly_palm/scene.gltf',  // Curly palm - added ./ to ensure relative path
+                './assets/Date_palm/scene.gltf'    // Date palm - added ./ to ensure relative path
+            ];
+            
+            console.debug(`Loading palm model from path: ${palmModels[palmType]}`);
+            
+            // Load the selected palm tree model - ensure DRACOLoader is properly set up
+            const gltfLoader = new THREE.GLTFLoader();
+            const dracoLoader = new THREE.DRACOLoader();
+            dracoLoader.setDecoderPath('https://www.gstatic.com/draco/v1/decoders/');
+            gltfLoader.setDRACOLoader(dracoLoader);
+            
+            // Different scale ranges for each tree type as requested
+            // Curly palm: Scale between 3-6
+            // Date palm: Scale between 1-2
+            const scaleRanges = [
+                { min: 3.0, max: 6.0 },  // Curly palm scale range
+                { min: 1.0, max: 2.0 }   // Date palm scale range
+            ];
+            
+            // Generate random scale within the appropriate range for the selected tree type
+            const scaleValue = scaleRanges[palmType].min + Math.random() * (scaleRanges[palmType].max - scaleRanges[palmType].min);
+            console.debug(`Generated ${palmType === 0 ? 'Curly palm' : 'Date palm'} scale: ${scaleValue.toFixed(2)}`);
+            
+            // Load the model
+            gltfLoader.load(
+                palmModels[palmType],
+                function(gltf) {
+                    console.debug(`Successfully loaded palm model #${index}!`);
+                    
+                    const palmModel = gltf.scene;
+                    
+                    // Apply scale and rotation adjustments
+                    palmModel.scale.set(scaleValue, scaleValue, scaleValue);
+                    console.debug(`Applied scale: ${scaleValue}`);
+                    
+                    // Random rotation for variety
+                    palmModel.rotation.y = Math.random() * Math.PI * 2;
+                    
+                    // Keep Y position static at 0 as requested
+                    palmModel.position.y = 0;
+                    
+                    // Remove debug sphere once model is loaded
+                    group.remove(debugSphere);
+                    
+                    // Check for meshes in the model
+                    let meshCount = 0;
+                    palmModel.traverse(function(node) {
+                        if (node.isMesh) {
+                            meshCount++;
+                            node.castShadow = true;
+                            node.receiveShadow = true;
+                            
+                            // Log material information to check if materials are loading correctly
+                            if (node.material) {
+                                console.debug(`Mesh has material: ${node.material.name || 'unnamed'}`);
+                            } else {
+                                console.debug(`Mesh has no material`);
+                            }
+                        }
+                    });
+                    console.debug(`Palm model contains ${meshCount} meshes`);
+                    
+                    // Add model to group
+                    group.add(palmModel);
+                },
+                function(xhr) {
+                    // Progress callback
+                    console.debug(`Palm #${index} loading progress: ${Math.round((xhr.loaded / xhr.total) * 100)}%`);
+                },
+                function(error) {
+                    console.error(`Error loading palm tree model #${index}:`, error);
+                    
+                    // Create a simple fallback palm tree if loading fails
+                    console.debug(`Using fallback palm tree for #${index}`);
+                    createFallbackPalmTree(group);
+                }
+            );
+            
+            // Position the palm tree - keeping the same positioning logic as the original
             let x, z;
             
             if (index < 16) {
@@ -2293,8 +2440,58 @@
                 }
             }
             
+            console.debug(`Positioning palm #${index} at x:${x.toFixed(2)}, z:${z.toFixed(2)}`);
             group.position.set(x, 0, z);
             scene.add(group);
+        }
+        
+        // Fallback function to create a simple palm tree if model loading fails
+        function createFallbackPalmTree(group) {
+            // Simple trunk
+            const trunkGeometry = new THREE.CylinderGeometry(0.35, 0.5, 7.5, 8);
+            const trunkMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0xa05a2c,
+                roughness: 0.75,
+                metalness: 0.1,
+                emissive: 0x3a2816,
+                emissiveIntensity: 0.2
+            });
+            const trunk = new THREE.Mesh(trunkGeometry, trunkMaterial);
+            trunk.position.y = 3.75;
+            trunk.castShadow = true;
+            group.add(trunk);
+            
+            // Simple fronds
+            for (let i = 0; i < 7; i++) {
+                const frondShape = new THREE.Shape();
+                frondShape.moveTo(0, 0);
+                frondShape.quadraticCurveTo(1, 0.5, 4, 0);
+                frondShape.quadraticCurveTo(1, -0.5, 0, 0);
+                
+                const extrudeSettings = {
+                    steps: 1,
+                    depth: 0.1,
+                    bevelEnabled: false
+                };
+                
+                const frondGeometry = new THREE.ExtrudeGeometry(frondShape, extrudeSettings);
+                const frondMaterial = new THREE.MeshStandardMaterial({ 
+                    color: 0x00aa00,
+                    roughness: 0.8,
+                    metalness: 0.1,
+                    emissive: 0x003300,
+                    emissiveIntensity: 0.15
+                });
+                const frond = new THREE.Mesh(frondGeometry, frondMaterial);
+                frond.position.set(0, 7.5, 0);
+                frond.rotation.set(
+                    Math.random() * 0.5 - 0.25,
+                    (Math.PI * 2 / 7) * i,
+                    Math.random() * 0.2 + 0.3
+                );
+                frond.castShadow = true;
+                group.add(frond);
+            }
         }
         
         function createCar() {
@@ -2343,6 +2540,9 @@
                 modelFolder = 'HuracanSTO';
             } else if (currentCarName.includes('Patrol')) {
                 modelFolder = 'NissanPatrolVTC';
+            } else if (currentCarName.includes('Dragster')) {
+                modelFolder = 'Dragster';
+                console.warn('DRAGSTER SELECTED - Will try to load from folder:', modelFolder);
             } else {
                 modelFolder = 'FordMustang';
             }
@@ -2508,6 +2708,50 @@
                                 
                                 console.debug('Added custom wheel:', wheel.name);
                             });
+                        } else if (currentCarName.includes('Dragster')) {
+                            // Top Fuel Dragster transformations - increased scale to ensure visibility
+                            carModel.scale.set(0.7, 0.7, 0.7); // Updated from 0.5 to 0.7 as requested
+                            
+                            // Add position to lift the model above the floor
+                            carModel.position.y = 0.5; // Lift the model up to prevent floor penetration
+                            
+                            // Fix wheel rotation axes for dragster
+                            carModel.traverse(function(node) {
+                                if (node.isMesh) {
+                                    const name = node.name.toLowerCase();
+                                    // Find wheel meshes by name
+                                    if (name.includes('wheel') || name.includes('tire') || name.includes('rim') || 
+                                        name.includes('roda') || name.includes('cerch') || name.includes('rad') || 
+                                        name.includes('tyre') || name.includes('roue')) {
+                                        
+                                        console.warn('Found dragster wheel:', name);
+                                        // Mark as wheel and set proper rotation axis
+                                        node.userData.isWheel = true;
+                                        node.userData.wheelAxis = 'x'; // Set X as the rotation axis for proper spinning
+                                    }
+                                }
+                            });
+                            
+                            // Remove debug red color and sphere
+                            // Comment out or remove the debug coloring and sphere
+                            /*
+                            // Make the model bright red to make it more visible for debugging
+                            carModel.traverse(function(node) {
+                                if (node.isMesh) {
+                                    console.warn('Found dragster mesh:', node.name);
+                                    node.material.emissive = new THREE.Color(1, 0, 0);
+                                    node.material.emissiveIntensity = 0.5;
+                                }
+                            });
+                            
+                            // Add a debug sphere to show where the model should be
+                            const debugSphere = new THREE.Mesh(
+                                new THREE.SphereGeometry(1, 16, 16),
+                                new THREE.MeshBasicMaterial({ color: 0xff0000, wireframe: true })
+                            );
+                            debugSphere.position.set(0, 0, 0);
+                            carModel.add(debugSphere);
+                            */
                         } else {
                             // Ford Mustang transformations
                             carModel.scale.set(1.5, 1.5, 1.5); // Changed from 1.0 to 1.5 as requested
@@ -2750,8 +2994,8 @@
         }
         
         function shiftUp() {
-            // For Porsche, limit to 8 gears
-            const maxGear = currentCarName.includes('Porsche') ? 8 : 10;
+            // Get maximum gear from the car's gear ratios array (subtract 1 because index 0 is neutral)
+            const maxGear = currentCarSpecs.gearRatios.length - 1;
             
             if (currentGear < maxGear) {
                 // Don't allow shifting too rapidly - enforce a minimum delay between shifts
@@ -2879,9 +3123,12 @@
             const now = performance.now();
             if (now - lastGearChangeTime < 1000) return;
             
+            // Get maximum gear from the car's gear ratios array (subtract 1 because index 0 is neutral)
+            const maxGear = currentCarSpecs.gearRatios.length - 1;
+            
             // Get max speed in current gear and next gear
             const currentGearMaxSpeed = calculateMaxSpeedInGear(currentGear);
-            const nextGearMaxSpeed = currentGear < 10 ? calculateMaxSpeedInGear(currentGear + 1) : Infinity;
+            const nextGearMaxSpeed = currentGear < maxGear ? calculateMaxSpeedInGear(currentGear + 1) : Infinity;
             
             // Automatic upshift logic - upshift when approaching redline
             if (rpm > currentCarSpecs.redlineRPM - 500 && currentGear < 10) {
@@ -3221,6 +3468,15 @@
                             
                             // AWD cars can put down more power effectively
                             engineForce *= 1.10; // Reverted from 1.05 back to 1.10 (10% boost)
+                        } else if (currentCarName.includes('Dragster')) {
+                            // Special case for Top Fuel Dragster - optimized for straight line acceleration
+                            // Pro dragsters have special tires and are designed for maximum traction
+                            slipFactor = 0.92 - (currentGear - 1) * 0.05; // Much better traction than regular RWD
+                            
+                            // Dragsters are specialized for launching - no RWD penalty
+                            engineForce *= 1.15; // 15% boost for specialized dragster setup
+                            
+                            console.log('Dragster special traction applied!');
                         } else {
                             // RWD cars have more wheel slip with high torque
                             slipFactor = 0.65 - (currentGear - 1) * 0.15; // Changed from 0.70 to 0.65 for RWD
@@ -3477,9 +3733,14 @@
                                         console.debug('Rotating wheel in Nissan Patrol:', node.name);
                                     }
                                     
+                                    // Special handling for dragster wheels
+                                    if (currentCarName.includes('Dragster')) {
+                                        // Dragster wheels should always rotate around X axis for proper spinning
+                                        node.rotation.x += wheelRotationSpeed * cappedDelta;
+                                    }
                                     // Apply rotation to wheel based on speed
                                     // Check if we have a stored wheel axis preference
-                                    if (node.userData && node.userData.wheelAxis) {
+                                    else if (node.userData && node.userData.wheelAxis) {
                                         if (node.userData.wheelAxis === 'z') {
                                             node.rotation.z += wheelRotationSpeed * cappedDelta;
                                         } else if (node.userData.wheelAxis === 'x') {
@@ -3607,6 +3868,19 @@
                     // Set a timeout as backup in case player stops
                     setTimeout(resetAfterFinish, 10000);
                 }
+            }
+            
+            // Update shadow camera to follow the car for better shadow alignment
+            if (car && directionalLight && directionalLight.shadow) {
+                // Point the light target at the car for better shadow alignment
+                directionalLight.target.position.copy(car.position);
+                directionalLight.target.updateMatrixWorld();
+                
+                // Optionally adjust the light to follow the car's Z position while maintaining a fixed offset
+                // directionalLight.position.z = car.position.z + 25;
+                
+                // Force shadow map update next frame
+                directionalLight.shadow.needsUpdate = true;
             }
         }
         
@@ -4013,7 +4287,7 @@
         }
         
         function createGuardRails() {
-            const railHeight = 1.84; // Changed from 1.4 to 1.84 meters as requested
+            const railHeight = 0.91; // Changed from 1.2 to 0.91 meters as requested
             const postSpacing = 5; // Space between posts
             const borderWidth = 1.5; // Reduced by 25% to match track border change
             
@@ -4298,13 +4572,14 @@
         }
         
         // Initialize 3D model viewers for car selection
-        let mustangViewer, porscheViewer, revueltoViewer, huracanViewer, patrolViewer;
-        let mustangModel, porscheModel, revueltoModel, huracanModel, patrolModel;
+        let mustangViewer, porscheViewer, revueltoViewer, huracanViewer, patrolViewer, dragsterViewer;
+        let mustangModel, porscheModel, revueltoModel, huracanModel, patrolModel, dragsterModel;
         let mustangViewerActive = false;
         let porscheViewerActive = false;
         let revueltoViewerActive = false;
         let huracanViewerActive = false;
         let patrolViewerActive = false;
+        let dragsterViewerActive = false;
         
         function initCarSelectionModelViewers() {
             // Only initialize if not already initialized
@@ -4326,6 +4601,10 @@
             
             if (!patrolViewerActive) {
                 initPatrolViewer();
+            }
+            
+            if (!dragsterViewerActive) {
+                initDragsterViewer();
             }
         }
         
@@ -4715,6 +4994,16 @@
                 porscheViewerActive = false;
                 revueltoViewerActive = false;
                 huracanViewerActive = false;
+            } else if (carType === 'dragster') {
+                currentCarSpecs = DRAGSTER_SPECS;
+                currentCarName = 'Top Fuel Dragster';
+                
+                // Stop other viewers to save resources
+                mustangViewerActive = false;
+                porscheViewerActive = false;
+                revueltoViewerActive = false;
+                huracanViewerActive = false;
+                patrolViewerActive = false;
             }
             
             // Update car model display
@@ -4741,6 +5030,15 @@
                 car.position.set(-TRACK_WIDTH/4, -0.5, 5); // Standard position for Mustang at y = -0.5
             }
             car.position.set(car.position.x, car.position.y, car.position.z);
+            
+            // Always start in first gear when changing cars
+            currentGear = 1;
+            
+            // Reset RPM to idle
+            rpm = currentCarSpecs.idleRPM;
+            
+            // Update the gear indicator display
+            updateGearDisplay();
         }
         
         function updateCarSpecsDisplay() {
@@ -4772,17 +5070,39 @@
                 specsList.appendChild(specItem);
             });
             
-            // Update model license info based on the car
+            // Update model license info based on the current car
             const modelLicense = document.getElementById('model-license');
+            
             if (currentCarName.includes('Porsche')) {
                 modelLicense.innerHTML = `
                     <p><strong>Model Credit:</strong> "Porsche 911 Turbo S" by 3D Cars Studio™, licensed under CC-BY-4.0</p>
                     <p><a href="https://sketchfab.com/3d-models/porsche-911-turbo-s-081cf9a708bb4b8b8f14d55b56ffdfe9" style="color: #ff5500;">View on Sketchfab</a></p>
                 `;
-            } else {
+            } else if (currentCarName.includes('Revuelto')) {
                 modelLicense.innerHTML = `
-                    <p><strong>Model Credit:</strong> "Ford Mustang GT 2019" by rafasawks, licensed under CC-BY-4.0</p>
-                    <p><a href="https://sketchfab.com/3d-models/ford-mustang-gt-2019-c7eb8d63350b4115a6f3402f9b50d8a3" style="color: #ff5500;">View on Sketchfab</a></p>
+                    <p><strong>Model Credit:</strong> "Lamborghini Revuelto" by Car2022, licensed under CC-BY-4.0</p>
+                    <p><a href="https://sketchfab.com/3d-models/lamborghini-revuelto-c0b31baef55142d69d320e6e22ad96dc" style="color: #ff5500;">View on Sketchfab</a></p>
+                `;
+            } else if (currentCarName.includes('Huracan')) {
+                modelLicense.innerHTML = `
+                    <p><strong>Model Credit:</strong> "2021 Lamborghini Huracán STO" by Ddiaz Design, licensed under CC-BY-4.0</p>
+                    <p><a href="https://sketchfab.com/3d-models/2021-lamborghini-huracan-sto-ca6dced4db01401ab52ae4b531c167f1" style="color: #ff5500;">View on Sketchfab</a></p>
+                `;
+            } else if (currentCarName.includes('Patrol')) {
+                modelLicense.innerHTML = `
+                    <p><strong>Model Credit:</strong> "Nissan Super Safari SDC PERFORMANCE™️" by SDC PERFORMANCE™️, licensed under CC-BY-4.0</p>
+                    <p><a href="https://sketchfab.com/3d-models/nissan-super-safari-sdc-performancetm-ee30651d805d4327adef9692de98472e" style="color: #ff5500;">View on Sketchfab</a></p>
+                `;
+            } else if (currentCarName.includes('Dragster')) {
+                modelLicense.innerHTML = `
+                    <p><strong>Model Credit:</strong> "Dragster." by the_86_guy, licensed under CC-BY-4.0</p>
+                    <p><a href="https://sketchfab.com/3d-models/dragster-3a1db4a880c34dada780cd2aad0ac830" style="color: #ff5500;">View on Sketchfab</a></p>
+                `;
+            } else {
+                // Default to Mustang
+                modelLicense.innerHTML = `
+                    <p><strong>Model Credit:</strong> "Ps1 Low-poly 2024 Ford Mustang Dark Horse" by LolAndPop, licensed under CC-BY-4.0</p>
+                    <p><a href="https://sketchfab.com/3d-models/ps1-low-poly-2024-ford-mustang-dark-horse-d15e5daca29a4b7384b5743f1ec53bd1" style="color: #ff5500;">View on Sketchfab</a></p>
                 `;
             }
             
@@ -4797,7 +5117,7 @@
         
         function updatePopupCarModel() {
             // Clear any existing model
-            while(popupModelCar.children.length > 0) {
+            while(popupModelCar && popupModelCar.children.length > 0) {
                 popupModelCar.remove(popupModelCar.children[0]);
             }
             
@@ -4813,6 +5133,8 @@
                 modelPath = 'HuracanSTO/scene.gltf';
             } else if (currentCarName.includes('Patrol')) {
                 modelPath = 'NissanPatrolVTC/scene.gltf';
+            } else if (currentCarName.includes('Dragster')) {
+                modelPath = 'Dragster/scene.gltf';
             } else {
                 modelPath = 'FordMustang/scene.gltf'; // Default to Mustang
             }
@@ -4822,16 +5144,18 @@
             if (currentCarName.includes('Porsche')) {
                 modelScale = 0.5;
             } else if (currentCarName.includes('Revuelto')) {
-                modelScale = 0.8;
+                modelScale = 2700; // Increased from 900 to 2700 (3x larger)
             } else if (currentCarName.includes('Huracan')) {
-                modelScale = 0.8;
+                modelScale = 2700; // Increased from 900 to 2700 (3x larger)
             } else if (currentCarName.includes('Patrol')) {
-                modelScale = 0.5;
+                modelScale = 1.7;
+            } else if (currentCarName.includes('Dragster')) {
+                modelScale = 0.05; // Set scale to exactly 0.05 as requested
             } else {
                 modelScale = 1.2; // Default for Mustang
             }
             
-            console.debug(`Loading ${currentCarName} model for popup...`);
+            console.debug(`Loading ${currentCarName} model for popup (path: ${modelPath}, scale: ${modelScale})...`);
             
             gltfLoader.load(modelPath, (gltf) => {
                 console.debug('Popup model loaded successfully');
@@ -4839,9 +5163,23 @@
                 // Set up the model
                 const carModel = gltf.scene;
                 carModel.scale.set(modelScale, modelScale, modelScale);
-                carModel.rotation.y = Math.PI; // Rotate to face forward
                 
-                // Add glass transparency fix
+                // Specific rotation for each car model to ensure proper orientation
+                if (currentCarName.includes('Porsche')) {
+                    carModel.rotation.y = Math.PI;
+                } else if (currentCarName.includes('Revuelto')) {
+                    carModel.rotation.y = Math.PI;
+                } else if (currentCarName.includes('Huracan')) {
+                    carModel.rotation.y = Math.PI;
+                } else if (currentCarName.includes('Patrol')) {
+                    carModel.rotation.y = Math.PI / 2; // Rotating 90 degrees
+                } else if (currentCarName.includes('Dragster')) {
+                    carModel.rotation.y = Math.PI / 4; // Rotating 45 degrees for better view
+                } else {
+                    carModel.rotation.y = Math.PI; // Default for Mustang
+                }
+                
+                // Add glass transparency fix for Porsche
                 if (currentCarName.includes('Porsche')) {
                     carModel.traverse((node) => {
                         if (node.isMesh && 
@@ -4863,10 +5201,26 @@
                 // Add to car container
                 popupModelCar.add(carModel);
                 
+                // Adjust camera position based on car size
+                if (currentCarName.includes('Patrol')) {
+                    // Move camera back for larger vehicles
+                    popupModelCamera.position.set(0, 1.5, 6);
+                } else if (currentCarName.includes('Huracan') || currentCarName.includes('Revuelto')) {
+                    // Adjust for Lamborghini models with scale of 2700
+                    popupModelCamera.position.set(0, 45, 120);
+                } else if (currentCarName.includes('Dragster')) {
+                    // Adjust for the long dragster
+                    popupModelCamera.position.set(0, 1.2, 7);
+                } else {
+                    // Default camera position
+                    popupModelCamera.position.set(0, 1, 4);
+                }
+                popupModelCamera.lookAt(0, 0, 0);
+                
                 // Start animation loop
                 animatePopupModel();
             }, undefined, (error) => {
-                console.error('Error loading popup model:', error);
+                console.error(`Error loading popup model (${modelPath}):`, error);
                 // Create a simple car model as fallback
                 createSimpleModelForPopup();
             });
@@ -4982,6 +5336,41 @@
                     <div class="car-spec-item">
                         <span class="car-spec-label">Transmission</span>
                         <span class="car-spec-value">8-Speed PDK</span>
+                    </div>
+                `;
+            }
+            
+            // Update Dragster specs
+            const dragsterSpecs = document.querySelector('.car-option[data-car="dragster"] .car-specs-grid');
+            if (dragsterSpecs) {
+                dragsterSpecs.innerHTML = `
+                    <div class="car-spec-item">
+                        <span class="car-spec-label">Power</span>
+                        <span class="car-spec-value">${DRAGSTER_SPECS.maxPower} HP</span>
+                    </div>
+                    <div class="car-spec-item">
+                        <span class="car-spec-label">Torque</span>
+                        <span class="car-spec-value">${DRAGSTER_SPECS.maxTorque} Nm</span>
+                    </div>
+                    <div class="car-spec-item">
+                        <span class="car-spec-label">0-60 mph</span>
+                        <span class="car-spec-value">${DRAGSTER_SPECS.zeroToSixty} sec</span>
+                    </div>
+                    <div class="car-spec-item">
+                        <span class="car-spec-label">1/4 Mile</span>
+                        <span class="car-spec-value">${DRAGSTER_SPECS.quarterMileTime} sec</span>
+                    </div>
+                    <div class="car-spec-item">
+                        <span class="car-spec-label">Top Speed</span>
+                        <span class="car-spec-value">${DRAGSTER_SPECS.maxSpeed} kph</span>
+                    </div>
+                    <div class="car-spec-item">
+                        <span class="car-spec-label">Weight</span>
+                        <span class="car-spec-value">${DRAGSTER_SPECS.weight} kg</span>
+                    </div>
+                    <div class="car-spec-item">
+                        <span class="car-spec-label">Drivetrain</span>
+                        <span class="car-spec-value">${DRAGSTER_SPECS.drivetrain}</span>
                     </div>
                 `;
             }
@@ -5357,63 +5746,35 @@
             const platformMaterial = new THREE.MeshStandardMaterial({ 
                 color: 0x444444,
                 metalness: 0.8,
-                roughness: 0.1,
-                envMapIntensity: 1.5
+                roughness: 0.2
             });
             const platform = new THREE.Mesh(platformGeometry, platformMaterial);
-            platform.position.y = -0.85; // Lowered to accommodate larger vehicle
             platform.receiveShadow = true;
             scene.add(platform);
             
-            // Create a group to hold the model
-            patrolModel = new THREE.Group();
-            scene.add(patrolModel);
+            // Load the Nissan Patrol model
+            const gltfLoader = new THREE.GLTFLoader();
             
-            // Create loader for the GLTF model
-            const loader = new THREE.GLTFLoader();
-            
-            // Try multiple paths to load the model
-            const pathsToTry = [
-                'NissanPatrolVTC/scene.gltf',
-                './NissanPatrolVTC/scene.gltf',
-                '../NissanPatrolVTC/scene.gltf',
-                '../../NissanPatrolVTC/scene.gltf',
-                window.location.href.substr(0, window.location.href.lastIndexOf('/') + 1) + 'NissanPatrolVTC/scene.gltf'
-            ];
-            
-            // Try to load using multiple path options
-            loadModelWithFallback(loader, pathsToTry, (gltf) => {
-                const model = gltf.scene;
+            // Set up loading for the model
+            gltfLoader.load('NissanPatrolVTC/scene.gltf', (gltf) => {
+                // Get the model from loaded data
+                patrolModel = gltf.scene;
                 
-                // Apply transformations
-                model.scale.set(3, 3, 3); // Changed size to 3 as requested (from 5)
-                model.position.set(0, -1, 0); // Changed height back to -1 as requested
-                model.rotation.y = Math.PI; // Rotate to face forward
+                // Scale and position the model
+                patrolModel.scale.set(1.7, 1.7, 1.7); // Appropriate scale for this model
+                patrolModel.position.y = 0; // Center it on the platform
                 
-                // Add to group
-                patrolModel.add(model);
+                // Apply rotation for best view angle
+                patrolModel.rotation.y = Math.PI / 2; // Rotate 90 degrees for best view
                 
-                // Apply shadows and fix glass transparency
-                model.traverse((node) => {
-                    if (node.isMesh) {
-                        node.castShadow = true;
-                        node.receiveShadow = true;
-                        
-                        // Fix glass transparency for windows
-                        if (node.name.includes('window') || node.name.includes('glass') || 
-                            (node.material && (
-                                node.material.name?.includes('window') || 
-                                node.material.name?.includes('glass')
-                            ))) {
-                            if (node.material) {
-                                node.material.transparent = true;
-                                node.material.opacity = 0.0; // Completely transparent windows (no tint)
-                                node.material.refractionRatio = 0.98; // Higher refraction ratio
-                                node.material.envMapIntensity = 1.0; // Standard reflection intensity
-                            }
-                        }
-                    }
-                });
+                // Add to scene
+                scene.add(patrolModel);
+                
+                // Setup animation loop
+                animate();
+                
+                // Update flag
+                patrolViewerActive = true;
             });
             
             // Animation function
@@ -5422,55 +5783,122 @@
                 
                 requestAnimationFrame(animate);
                 
+                // Slowly rotate the model
                 if (patrolModel) {
-                    patrolModel.rotation.y += 0.01;
-                    
-                    // Rotate wheels - enhanced for Nissan Patrol
-                    patrolModel.traverse((node) => {
-                        if (node.isMesh) {
-                            // Try identifying wheels by name
-                            const name = node.name.toLowerCase();
-                            // Use broader wheel detection
-                            if (name.includes('wheel') || name.includes('tire') || name.includes('rim') || 
-                                name.includes('roda') || name.includes('cerch') || name.includes('rad') || 
-                                name.includes('tyre') || name.includes('roue') || 
-                                (node.userData && node.userData.isWheel)) {
-                                
-                                // Force rotation on multiple axes to ensure wheels spin
-                                node.rotation.x += 0.1; // Try x-axis
-                                node.rotation.z += 0.1; // Try z-axis
-                                
-                                // Log successful rotation
-                                console.debug('Rotating wheel:', name);
-                            }
-                        }
-                    });
+                    patrolModel.rotation.y += 0.01; // Slow rotation
                 }
                 
+                // Render scene
                 renderer.render(scene, camera);
             }
+        }
+        
+        function initDragsterViewer() {
+            const container = document.getElementById('dragster-model-viewer');
+            if (!container) return;
             
-            // Start animation
-            patrolViewerActive = true;
-            animate();
-            
-            // Handle window resize
-            function onResize() {
-                if (!container) return;
-                camera.aspect = container.clientWidth / container.clientHeight;
-                camera.updateProjectionMatrix();
-                renderer.setSize(container.clientWidth, container.clientHeight);
+            // Clear container if it has children already
+            while (container.firstChild) {
+                container.removeChild(container.firstChild);
             }
             
-            window.addEventListener('resize', onResize);
+            // Create scene, camera, renderer
+            const scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x111111);
             
-            // Create the viewer object for reference
-            patrolViewer = {
-                scene: scene,
-                camera: camera,
-                renderer: renderer,
-                container: container
-            };
+            const camera = new THREE.PerspectiveCamera(40, container.clientWidth / container.clientHeight, 0.1, 1000);
+            camera.position.set(0, 1.2, 7); // Positioned to see the long dragster
+            camera.lookAt(0, 0.5, 0);
+            
+            const renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap; // Adds soft edges to shadows
+            renderer.shadowMap.autoUpdate = true;
+            renderer.shadowMap.needsUpdate = true;
+            container.appendChild(renderer.domElement);
+            
+            // Add lights
+            const ambientLight = new THREE.AmbientLight(0x89bbff, 0.8); // Sky-blue tinted ambient light
+            scene.add(ambientLight);
+            
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 2.0); // Pure white directional light
+            directionalLight.position.set(5, 5, 5);
+            directionalLight.castShadow = true;
+            directionalLight.shadow.mapSize.width = 4096; // Doubled shadow map resolution for more detailed shadows
+            directionalLight.shadow.mapSize.height = 4096; // Doubled shadow map resolution for more detailed shadows
+            directionalLight.shadow.camera.near = 0.5;
+            directionalLight.shadow.camera.far = 20;
+            directionalLight.shadow.camera.left = -10;
+            directionalLight.shadow.camera.right = 10;
+            directionalLight.shadow.camera.top = 10;
+            directionalLight.shadow.camera.bottom = -10;
+            directionalLight.shadow.bias = -0.0005; // Fixes shadow acne
+            directionalLight.shadow.normalBias = 0.02; // Improves shadow quality
+            scene.add(directionalLight);
+            
+            // Add platform
+            const platformGeometry = new THREE.BoxGeometry(6, 0.1, 12); // Longer platform for the dragster
+            const platformMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0x333333,
+                metalness: 0.8,
+                roughness: 0.2
+            });
+            const platform = new THREE.Mesh(platformGeometry, platformMaterial);
+            platform.receiveShadow = true;
+            scene.add(platform);
+            
+            // Load the Top Fuel Dragster model
+            const gltfLoader = new THREE.GLTFLoader();
+            
+            // Set up loading for the model
+            gltfLoader.load('Dragster/scene.gltf', (gltf) => {
+                // Get the model from loaded data
+                dragsterModel = gltf.scene;
+                
+                console.warn('DRAGSTER MODEL VIEWER - Model loaded successfully!');
+                
+                // Scale and position the model
+                dragsterModel.scale.set(0.3, 0.3, 0.3); // Increased scale for better visibility
+                dragsterModel.position.y = 0.2; // Slight lift from platform
+                
+                // Apply rotation for best view angle
+                dragsterModel.rotation.y = Math.PI / 4; // Rotate 45 degrees for better view
+                
+                // Add to scene
+                scene.add(dragsterModel);
+                
+                /* Remove debug sphere
+                // Add a debug sphere to show where the model should be
+                const debugSphere = new THREE.Mesh(
+                    new THREE.SphereGeometry(0.5, 16, 16),
+                    new THREE.MeshBasicMaterial({ color: 0xff0000, wireframe: true })
+                );
+                debugSphere.position.set(0, 0.5, 0);
+                scene.add(debugSphere);
+                */
+                
+                // Setup animation loop
+            animate();
+            
+                // Update flag
+                dragsterViewerActive = true;
+            });
+            
+            // Animation function
+            function animate() {
+                if (!dragsterViewerActive) return;
+                
+                requestAnimationFrame(animate);
+                
+                // Slowly rotate the model
+                if (dragsterModel) {
+                    dragsterModel.rotation.y += 0.01; // Slow rotation
+                }
+                
+                // Render scene
+                renderer.render(scene, camera);
+            }
         }
     </script>
     
@@ -5489,6 +5917,12 @@
             const closeSettings = document.querySelector('.close-settings');
             const applySettings = document.getElementById('apply-settings');
             const shadowQuality = document.getElementById('shadow-quality');
+            
+            // Set up feedback button redirect
+            const feedbackButton = document.getElementById('feedback-button');
+            feedbackButton.addEventListener('click', function() {
+                window.location.href = "https://dragsim.featurebase.app/en";
+            });
             
             // Ensure the shadow quality dropdown matches the current resolution
             if (directionalLight && directionalLight.shadow && directionalLight.shadow.mapSize) {
@@ -5610,6 +6044,49 @@
             
             console.log("Shadow resolution updated successfully");
         }
+
+        // Function to check if assets exist and are accessible
+        function checkAssetsExist() {
+            const assetPaths = [
+                './assets/Curly_palm/scene.gltf',
+                './assets/Date_palm/scene.gltf'
+            ];
+            
+            console.debug("Checking if palm tree assets are accessible...");
+            
+            assetPaths.forEach(path => {
+                fetch(path, { method: 'HEAD' })
+                    .then(response => {
+                        if (response.ok) {
+                            console.debug(`✅ Asset accessible: ${path}`);
+                        } else {
+                            console.error(`❌ Asset not accessible: ${path} (${response.status})`);
+                        }
+                    })
+                    .catch(error => {
+                        console.error(`❌ Error accessing asset: ${path}`, error);
+                    });
+            });
+            
+            // Also check textures for one of the models
+            fetch('./assets/Curly_palm/textures/Tree_0Mat_baseColor.png', { method: 'HEAD' })
+                .then(response => {
+                    if (response.ok) {
+                        console.debug(`✅ Texture accessible: Curly_palm texture`);
+                    } else {
+                        console.error(`❌ Texture not accessible: Curly_palm texture (${response.status})`);
+                    }
+                })
+                .catch(error => {
+                    console.error(`❌ Error accessing texture:`, error);
+                });
+        }
+        
+        // Run the asset check when the page loads
+        window.addEventListener('load', function() {
+            // Check if assets exist after a short delay to ensure everything is loaded
+            setTimeout(checkAssetsExist, 1000);
+        });
     </script>
 </body>
 </html> 
