@@ -88,7 +88,12 @@
             color: white;
             font-size: 40px;
             margin-bottom: 20px;
-            text-shadow: 2px 2px 4px black;
+            text-align: center;
+            text-shadow: 
+                0 0 5px #0066ff,
+                0 0 10px #0066ff,
+                2px 2px 4px black;
+            width: 100%;
         }
         
         /* Restart button */
@@ -1020,7 +1025,7 @@
         </div>
         
         <!-- Light status indicator -->
-        <div id="light-status" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 100%; text-align: center; color: white; font-size: 45px; z-index: 100; text-shadow: 2px 2px 4px black; font-weight: bold;">WAIT FOR GREEN LIGHT!</div>
+        <div id="light-status" style="position: absolute; top: 25%; left: 50%; transform: translate(-50%, -50%); width: 100%; text-align: center; color: white; font-size: 45px; z-index: 100; text-shadow: 2px 2px 4px black; font-weight: bold;">WAIT FOR GREEN LIGHT!</div>
         
         <!-- Quarter mile time display -->
         <div id="quarter-mile-time">
@@ -1030,6 +1035,11 @@
         
         <!-- Gauges -->
         <div id="gauges">
+            <!-- 0-60mph Timer -->
+            <div id="zero-to-sixty" style="margin-bottom: 10px; background-color: rgba(0, 0, 0, 0.6); border-radius: 5px; padding: 10px; display: flex; flex-direction: column; align-items: center; border: 2px solid #444; box-shadow: 0 0 10px rgba(0,0,0,0.5); width: auto; max-width: 150px; position: absolute; right: 0; top: -100px;">
+                <div style="font-size: 16px; color: #fff; margin-bottom: 5px; white-space: nowrap;">0-60 MPH</div>
+                <div id="zero-to-sixty-value" style="font-family: 'Digital-7', monospace; font-size: 26px; color: #00ff00; text-shadow: 0 0 5px #00ff00;">0.00s</div>
+            </div>
             <div id="rpm-gauge" class="gauge-container">
                 <div class="gauge-background"></div>
                 <div class="gauge-bar-bg"></div>
@@ -1062,20 +1072,25 @@
         </div>
         
         <!-- Settings Button -->
-        <div id="settings-button">
+        <div id="settings-button" onclick="document.getElementById('settings-popup').style.display='block';">
             <span>Settings</span>
         </div>
         
         <!-- Feedback Button -->
-        <div id="feedback-button">
+        <div id="feedback-button" onclick="window.location.href='https://dragsim.featurebase.app/en';">
             <span>Feedback & Ideas</span>
+        </div>
+        
+        <!-- Stats Button -->
+        <div id="stats-button" style="position: absolute; top: 60px; right: 15px; background-color: rgba(50, 50, 50, 0.7); color: white; padding: 5px 10px; border-radius: 4px; cursor: pointer; z-index: 100;">
+            <span>Stats</span>
         </div>
         
         <!-- Settings Popup -->
         <div id="settings-popup">
             <div class="settings-header">
                 <h2>Graphics Settings</h2>
-                <span class="close-settings">&times;</span>
+                <span class="close-settings" onclick="document.getElementById('settings-popup').style.display='none';">&times;</span>
             </div>
             <div class="settings-content">
                 <div class="setting-item">
@@ -1086,6 +1101,8 @@
                             <option value="4096" selected>Medium (4096px)</option>
                             <option value="8192">High (8192px)</option>
                             <option value="10240">Ultra (10240px)</option>
+                            <option value="20480">Ultra Max (20480px)</option>
+                            <option value="40960">Ultra Pro Max (40960px)</option>
                         </select>
                     </div>
                 </div>
@@ -1093,8 +1110,26 @@
             </div>
         </div>
         
+        <!-- Performance Stats Popup -->
+        <div id="stats-popup" style="display: none; position: absolute; top: 95px; right: 15px; background-color: rgba(0, 0, 0, 0.8); color: #fff; padding: 10px; border-radius: 5px; font-family: monospace; z-index: 1000; min-width: 200px; border: 1px solid #444;">
+            <div class="stats-header" style="display: flex; justify-content: space-between; margin-bottom: 5px; border-bottom: 1px solid #444;">
+                <h3 style="margin: 0; font-size: 14px;">Performance Stats</h3>
+                <span id="close-stats" style="cursor: pointer; font-weight: bold;">&times;</span>
+            </div>
+            <div class="stats-content" style="font-size: 12px;">
+                <div><span>FPS: </span><span id="fps-value">0</span></div>
+                <div><span>Memory: </span><span id="memory-value">N/A</span></div>
+                <div><span>Shadow Memory: </span><span id="shadow-memory-value">N/A</span></div>
+                <div><span>Position: </span><span id="position-value">0, 0, 0</span></div>
+                <div><span>Shadow Far: </span><span id="shadow-far-value">0</span></div>
+                <div><span>Light Position: </span><span id="light-position-value">0, 0, 0</span></div>
+                <div><span>Drawcalls: </span><span id="drawcalls-value">0</span></div>
+                <div><span>Triangles: </span><span id="triangles-value">0</span></div>
+            </div>
+        </div>
+        
         <div id="startScreen">
-            <h1 id="gameTitle">3D DRAG RACING</h1>
+            <h1 id="gameTitle">DragSim by Code<br>100% coded with cursor (except the 3d models).<br><span style="font-size: 0.6em;">press "d" and "`" to turn off the debug console</span></h1>
             <button id="startButton">START RACING</button>
         </div>
     </div>
@@ -1173,6 +1208,12 @@
         // Add a momentum indicator variable
         let momentumIndicatorActive = false;
         let momentumIndicatorTimeout = null;
+        
+        // 0-60mph timer variables
+        let zeroToSixtyStarted = false;
+        let zeroToSixtyStartTime = 0;
+        let zeroToSixtyCompleted = false;
+        let zeroToSixtyTime = 0;
         
         // Light system variables
         let lightSequenceActive = false;
@@ -1407,13 +1448,19 @@
             scene = new THREE.Scene();
             scene.background = new THREE.Color(0x66aaff); // More vibrant sky blue
             
+            // Initialize frame counting variables for FPS calculation
+            lastFrameTime = performance.now();
+            frameCount = 0;
+            lastFpsUpdate = 0;
+            currentFps = 0;
+            
             // Create camera
             camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 3000);
             
             // Initialize camera orbit settings
-            cameraOrbitAngle = 0; // Start looking from behind the car (better starting view)
-            cameraDistance = 20; // Changed to 20 as requested
-            cameraHeight = 4; // Reduced from 5 to match the new proportions
+            cameraOrbitAngle = 0; // Changed to 0 as requested (was Math.PI / 2)
+            cameraDistance = 8; // Changed to 8 as requested
+            cameraHeight = 4; // Changed from 7 to 4 as requested
             
             // Set initial camera position using orbit parameters
             const initialCameraX = 0;
@@ -1454,32 +1501,59 @@
             const ambientLight = new THREE.AmbientLight(0xffeedd, 0.7); // Warm ambient light for summer afternoon
             scene.add(ambientLight);
             
+            // Main directional light for nearby shadows
             const directionalLight = new THREE.DirectionalLight(0xffffff, 1.8); // Pure white sunlight
-            directionalLight.position.set(-25, 80, 25); // Further refined for better shadow alignment
+            directionalLight.position.set(-100, 300, 100); // Inverted X axis (-100 instead of 100)
             directionalLight.castShadow = true;
-            directionalLight.shadow.camera.left = -500;
-            directionalLight.shadow.camera.right = 500;
-            directionalLight.shadow.camera.top = 500;
-            directionalLight.shadow.camera.bottom = -500;
+            
+            // Use optimized shadow frustum for near-overhead sun
+            directionalLight.shadow.camera.left = -1000;
+            directionalLight.shadow.camera.right = 1000;
+            directionalLight.shadow.camera.top = 1000;
+            directionalLight.shadow.camera.bottom = -1000;
             directionalLight.shadow.camera.near = 0.5;
-            directionalLight.shadow.camera.far = 1000;
-            directionalLight.shadow.mapSize.width = 4096; // Detailed shadows
+            directionalLight.shadow.camera.far = 20000; // Massive far distance to ensure shadows at all distances
+            
+            // Increase shadow map resolution
+            directionalLight.shadow.mapSize.width = 4096; 
             directionalLight.shadow.mapSize.height = 4096;
-            directionalLight.shadow.bias = -0.00005; // Further reduced to minimize offset
-            directionalLight.shadow.normalBias = 0.005; // Fine-tuned for better alignment
+            
+            // Fine-tuned shadow quality for overhead position
+            directionalLight.shadow.bias = -0.00002;
+            directionalLight.shadow.normalBias = 0.002;
             
             // Alternative shadow projection type for more precise shadows
             directionalLight.shadow.camera.projection = THREE.OrthographicCamera;
             
-            // Add light target for proper shadow direction
-            directionalLight.target = new THREE.Object3D();
-            scene.add(directionalLight.target);
+            // Add second directional light for distant shadows (beyond 296m)
+            const farDirectionalLight = new THREE.DirectionalLight(0xffffff, 1.8);
+            farDirectionalLight.position.set(-100, 300, 400); // Inverted X axis to match main light
+            farDirectionalLight.castShadow = true;
             
-            // Create a helper to visualize the light position and shadow camera (comment out in production)
-            // const helper = new THREE.CameraHelper(directionalLight.shadow.camera);
-            // scene.add(helper);
+            // Use larger shadow frustum
+            farDirectionalLight.shadow.camera.left = -750;
+            farDirectionalLight.shadow.camera.right = 750;
+            farDirectionalLight.shadow.camera.top = 750;
+            farDirectionalLight.shadow.camera.bottom = -750;
+            farDirectionalLight.shadow.camera.near = 0.5;
+            farDirectionalLight.shadow.camera.far = 10000; // Extended far distance for the distant areas
+            
+            // Match shadow map resolution
+            farDirectionalLight.shadow.mapSize.width = 4096;
+            farDirectionalLight.shadow.camera.far = 5000; // Extended far distance for the distant areas
+            farDirectionalLight.shadow.mapSize.width = 4096;
+            farDirectionalLight.shadow.mapSize.height = 4096;
+            farDirectionalLight.shadow.bias = -0.00005;
+            farDirectionalLight.shadow.normalBias = 0.005;
+            
+            // Add light targets for proper shadow direction
+            directionalLight.target = new THREE.Object3D();
+            farDirectionalLight.target = new THREE.Object3D();
+            scene.add(directionalLight.target);
+            scene.add(farDirectionalLight.target);
             
             scene.add(directionalLight);
+            scene.add(farDirectionalLight);
             
             // Add subtle hemisphere light for environment lighting
             const hemiLight = new THREE.HemisphereLight(0xffeebb, 0x080820, 0.4); // Warm sky, subtle blue-ish ground
@@ -1622,9 +1696,9 @@
         let isDragging = false;
         let previousMouseX = 0;
         let previousMouseY = 0;
-        let cameraOrbitAngle = 0;
-        let cameraDistance = 20; // Changed to 20 as requested
-        let cameraHeight = 4; // Reduced from 5 to match the new proportions
+        let cameraOrbitAngle = 0; // Changed to 0 as requested
+        let cameraDistance = 8; // Changed to 8 as requested
+        let cameraHeight = 4; // Changed from 7 to 4 as requested
         
         // Add mouse event listeners for camera control
         document.addEventListener('mousedown', (e) => {
@@ -1657,19 +1731,9 @@
         document.addEventListener('wheel', (e) => {
             e.preventDefault(); // Prevent page scrolling
             
-            // Calculate zoom amount based on delta with better sensitivity
-            let zoomAmount;
-            if (Math.abs(e.deltaY) < 100) {
-                // For fine-grained touch pads
-                zoomAmount = e.deltaY * 0.05;
-            } else {
-                // For regular mouse wheels (larger steps)
-                zoomAmount = e.deltaY > 0 ? 2 : -2;
-            }
-            
-            // Apply zoom with improved constraints
-            // Zoom in closer for better detail, but not too far out
-            cameraDistance = Math.max(2, Math.min(40, cameraDistance + zoomAmount)); // Increased max distance to 40 to match new default of 20
+            // Adjust zoom with deltaY
+            const zoomAmount = e.deltaY * 0.02; // Removed negative sign to invert zoom direction
+            cameraDistance = Math.max(2, Math.min(20, cameraDistance + zoomAmount)); // Updated max distance to 20
             
             // Immediately update camera position for responsive feel
             if (car) {
@@ -1855,7 +1919,7 @@
             
             // Create a single center dividing line down the middle of the track (main race portion only)
             const centerLineGeometry = new THREE.PlaneGeometry(0.3, TRACK_LENGTH);
-            const centerLineMaterial = new THREE.MeshStandardMaterial({ 
+            const centerLineMaterial = new THREE.MeshStandardMaterial({
                 color: 0xffee00, // Brighter yellow
                 emissive: 0x664400,
                 emissiveIntensity: 0.3,
@@ -2945,6 +3009,13 @@
                 updateTimeDisplay(0);
             }
             
+            // Reset 0-60mph timer
+            zeroToSixtyStarted = false;
+            zeroToSixtyStartTime = 0;
+            zeroToSixtyCompleted = false;
+            zeroToSixtyTime = 0;
+            document.getElementById('zero-to-sixty-value').textContent = "0.00s";
+            
             // Initialize light system
             lightSequenceActive = true;
             lightSequenceStartTime = performance.now();
@@ -2969,9 +3040,9 @@
             updateGearDisplay();
             
             // Reset camera orbit parameters
-            cameraOrbitAngle = 0;
-            cameraDistance = 20; // Changed to 20 as requested
-            cameraHeight = 4; // Reduced from 5 to match the new proportions
+            cameraOrbitAngle = 0; // Changed to 0 as requested (was Math.PI / 2)
+            cameraDistance = 8; // Changed to 8 as requested
+            cameraHeight = 4; // Changed from 7 to 4 as requested
             
             // Position camera using orbit parameters
             const cameraX = car.position.x + Math.sin(cameraOrbitAngle) * cameraDistance;
@@ -3643,27 +3714,27 @@
                 shiftUp();
             }
             
-            // Update steering
-            if (keys['a']) {
-                steeringAngle = Math.min(steeringAngle + 1 * cappedDelta, 0.3); // Reduced max angle from 0.5 to 0.3
-            } else if (keys['d']) {
-                steeringAngle = Math.max(steeringAngle - 1 * cappedDelta, -0.3); // Reduced max angle from -0.5 to -0.3
+            // Handle steering - Fixed: D goes right, A goes left
+            if (keys['d']) { // 'd' steers right
+                steeringAngle = Math.max(steeringAngle - 1 * cappedDelta, -0.3); // Negative angle for right
+            } else if (keys['a']) { // 'a' steers left
+                steeringAngle = Math.min(steeringAngle + 1 * cappedDelta, 0.3); // Positive angle for left
             } else {
                 // Return steering to center more quickly
-                steeringAngle *= 0.8; // Was 0.9, now returns to center faster
+                steeringAngle *= 0.8;
             }
             
             // Update the car position and appearance
             if (car) {
                 // Apply physics-based movement
                 const movementDistance = speed * cappedDelta;
-                car.position.z += movementDistance;
+                car.position.z += movementDistance; // Forward movement along Z
                 
                 // Update distance
                 distance = car.position.z - initialPosition;
                 
-                // Apply steering
-                car.position.x += steeringAngle * movementDistance;
+                // Apply steering - COMPLETELY INVERTED: negative angle now moves left, positive moves right
+                car.position.x += steeringAngle * movementDistance; // INVERTED SIGN: + instead of -
                 
                 // Keep car within track boundaries
                 const trackHalfWidth = TRACK_WIDTH / 2;
@@ -3686,8 +3757,8 @@
                     car.position.z
                 );
                 
-                // Apply steering rotation plus additional shake if rev limiter is active
-                car.rotation.y = -steeringAngle * 0.8 + (revLimiterActive ? Math.sin(timestamp / 25) * 0.01 : 0);
+                // Apply steering rotation - INVERTED: negative angle now rotates left
+                car.rotation.y = steeringAngle * 0.8 + (revLimiterActive ? Math.sin(timestamp / 25) * 0.01 : 0);
                 
                 // Update wheels to rotate based on speed and steering
                 try {
@@ -3763,7 +3834,7 @@
                                 
                                 // If it's a front wheel, also apply steering
                                 if (name.includes('front') || name.includes('fr') || name.includes('fl')) {
-                                    node.rotation.y = steeringAngle * 0.8;
+                                    node.rotation.y = steeringAngle * 0.8; // INVERTED: Matches new car.rotation.y
                                 }
                             }
                         });
@@ -3777,8 +3848,8 @@
                         wheelBR.rotation.x += wheelRotationSpeed * cappedDelta;
                         
                         // Steering for front wheels
-                        wheelFL.rotation.y = steeringAngle * 0.8;
-                        wheelFR.rotation.y = steeringAngle * 0.8;
+                        wheelFL.rotation.y = steeringAngle * 0.8; // INVERTED: Matches new car.rotation.y
+                        wheelFR.rotation.y = steeringAngle * 0.8; // INVERTED: Matches new car.rotation.y
                     }
                 } catch (e) {
                     console.error('Error updating wheels:', e);
@@ -3872,15 +3943,57 @@
             
             // Update shadow camera to follow the car for better shadow alignment
             if (car && directionalLight && directionalLight.shadow) {
-                // Point the light target at the car for better shadow alignment
+                // Calculate shadow camera position based on car position
+                const carZ = car.position.z;
+                
+                // Position the light at a fixed position relative to the track
+                // Keep the light 100m to the right (negative X with inverted axis) and 100m away from start
+                directionalLight.position.set(-100, 300, 100);
+                
+                // Target the car's position for proper shadow projection
                 directionalLight.target.position.copy(car.position);
                 directionalLight.target.updateMatrixWorld();
                 
-                // Optionally adjust the light to follow the car's Z position while maintaining a fixed offset
-                // directionalLight.position.z = car.position.z + 25;
+                // Recenter shadow camera frustum on car's current position
+                // This is the key fix to ensure shadows render at all distances
+                const shadowCam = directionalLight.shadow.camera;
                 
-                // Force shadow map update next frame
+                // Set shadow camera to match light position
+                shadowCam.position.copy(directionalLight.position);
+                
+                // Set the shadow camera's far value to an extremely large value
+                // Debug note: If shadows still stop at 296m, the issue may be in the Three.js implementation
+                shadowCam.far = 50000; // Extremely large value to ensure shadows at all distances
+                
+                // Force update shadow camera matrix - critical for proper shadow rendering
+                shadowCam.updateProjectionMatrix();
+                
+                // Force shadow map update
                 directionalLight.shadow.needsUpdate = true;
+                renderer.shadowMap.needsUpdate = true;
+            }
+            
+            // 0-60mph timer logic
+            // Use the existing speedMPH variable instead of redeclaring it
+            
+            // Start the timer when car begins moving
+            if (speedMPH > 0.5 && !zeroToSixtyStarted && !zeroToSixtyCompleted) {
+                zeroToSixtyStarted = true;
+                zeroToSixtyStartTime = timestamp;
+                document.getElementById('zero-to-sixty-value').textContent = "0.00s";
+            }
+            
+            // Check if we've reached 60mph
+            if (zeroToSixtyStarted && !zeroToSixtyCompleted && speedMPH >= 60) {
+                zeroToSixtyCompleted = true;
+                zeroToSixtyTime = (timestamp - zeroToSixtyStartTime) / 1000;
+                document.getElementById('zero-to-sixty-value').textContent = zeroToSixtyTime.toFixed(2) + "s";
+            }
+            
+            // Update the timer display while accelerating
+            if (zeroToSixtyStarted && !zeroToSixtyCompleted) {
+                const currentTime = (timestamp - zeroToSixtyStartTime) / 1000;
+                document.getElementById('zero-to-sixty-value').textContent = currentTime.toFixed(2) + "s";
             }
         }
         
@@ -3912,6 +4025,15 @@
             // Call updateGame with the current timestamp
             updateGame(now);
             
+            // Force shadow maps to update every frame
+            if (directionalLight && directionalLight.shadow) {
+                directionalLight.shadow.needsUpdate = true;
+                renderer.shadowMap.needsUpdate = true;
+            }
+            
+            // Update performance stats if visible
+            updatePerformanceStats();
+            
             // Render the scene
             renderer.render(scene, camera);
         }
@@ -3941,6 +4063,13 @@
                     toggleDebugConsole();
                     lastToggleTime = now;
                 }
+            }
+            
+            // Toggle stats display with F2 key
+            if (event.key === 'F2') {
+                const statsPopup = document.getElementById('stats-popup');
+                statsPopup.style.display = statsPopup.style.display === 'none' ? 'block' : 'none';
+                event.preventDefault(); // Prevent default browser action for F2
             }
             
             if (keys.hasOwnProperty(key)) {
@@ -5859,8 +5988,8 @@
                 console.warn('DRAGSTER MODEL VIEWER - Model loaded successfully!');
                 
                 // Scale and position the model
-                dragsterModel.scale.set(0.3, 0.3, 0.3); // Increased scale for better visibility
-                dragsterModel.position.y = 0.2; // Slight lift from platform
+                dragsterModel.scale.set(100.0, 100.0, 100.0); // Massively increased scale for better visibility
+                dragsterModel.position.y = 0.5; // Increased lift from platform for better visibility
                 
                 // Apply rotation for best view angle
                 dragsterModel.rotation.y = Math.PI / 4; // Rotate 45 degrees for better view
@@ -5900,11 +6029,8 @@
                 renderer.render(scene, camera);
             }
         }
-    </script>
-    
-    <!-- Settings Functionality -->
-    <script>
-        // Settings functionality
+        
+        // Settings Functionality
         let currentShadowResolution = 4096; // Default shadow resolution
         
         // Wait for document to be ready
@@ -5917,6 +6043,11 @@
             const closeSettings = document.querySelector('.close-settings');
             const applySettings = document.getElementById('apply-settings');
             const shadowQuality = document.getElementById('shadow-quality');
+            
+            // Set up stats button and popup
+            const statsButton = document.getElementById('stats-button');
+            const statsPopup = document.getElementById('stats-popup');
+            const closeStats = document.getElementById('close-stats');
             
             // Set up feedback button redirect
             const feedbackButton = document.getElementById('feedback-button');
@@ -5954,6 +6085,17 @@
             // Apply settings immediately when shadow quality changes
             shadowQuality.addEventListener('change', function() {
                 const newResolution = parseInt(shadowQuality.value);
+                
+                // Show warning for extremely high resolutions
+                if (newResolution >= 40960) {
+                    const confirmHighRes = confirm("Warning: Ultra Pro Max shadow resolution may significantly impact performance on some devices. Continue?");
+                    if (!confirmHighRes) {
+                        // Reset to previous value if user cancels
+                        shadowQuality.value = currentShadowResolution.toString();
+                        return;
+                    }
+                }
+                
                 if (newResolution !== currentShadowResolution) {
                     updateShadowResolution(newResolution);
                     currentShadowResolution = newResolution;
@@ -5981,16 +6123,62 @@
                     settingsPopup.style.display = 'none';
                 }
             });
+            
+            // Stats button toggle
+            statsButton.addEventListener('click', function() {
+                console.log("Stats button clicked. Current display:", statsPopup.style.display);
+                if (statsPopup.style.display === 'none' || statsPopup.style.display === '') {
+                    console.log("Setting display to block");
+                    statsPopup.style.display = 'block';
+                } else {
+                    console.log("Setting display to none");
+                    statsPopup.style.display = 'none';
+                }
+                console.log("After change:", statsPopup.style.display);
+            });
+            
+            // Close stats popup when close button is clicked
+            closeStats.addEventListener('click', function() {
+                statsPopup.style.display = 'none';
+            });
         });
         
         // Function to update shadow resolution on all directional lights
         function updateShadowResolution(resolution) {
             console.log(`Updating shadow resolution to ${resolution}px`);
             
+            // Add special handling for Ultra Pro Max resolution
+            if (resolution >= 40960) {
+                console.log("Using Ultra Pro Max shadow quality - this may impact performance");
+                // Some devices may have GPU memory limitations - add safety measures
+                try {
+                    // Optionally force garbage collection if available
+                    if (typeof window.gc === 'function') {
+                        window.gc();
+                    }
+                } catch (e) {
+                    console.warn("Memory optimization failed:", e);
+                }
+            }
+            
             // Update main scene directional light
             if (directionalLight) {
                 directionalLight.shadow.mapSize.width = resolution;
                 directionalLight.shadow.mapSize.height = resolution;
+                
+                // Optimize shadow bias and normalBias based on resolution
+                // Higher resolution allows for more precise bias values
+                if (resolution >= 20480) {
+                    directionalLight.shadow.bias = -0.000025; // More precise bias for ultra high resolution
+                    directionalLight.shadow.normalBias = 0.002; // Finer normal bias
+                } else if (resolution >= 8192) {
+                    directionalLight.shadow.bias = -0.00005;
+                    directionalLight.shadow.normalBias = 0.003;
+                } else {
+                    directionalLight.shadow.bias = -0.0001;
+                    directionalLight.shadow.normalBias = 0.005;
+                }
+                
                 directionalLight.shadow.map = null; // Force shadow map recreation
             }
             
@@ -6086,6 +6274,105 @@
         window.addEventListener('load', function() {
             // Check if assets exist after a short delay to ensure everything is loaded
             setTimeout(checkAssetsExist, 1000);
+        });
+        
+        // Function to update performance stats
+        function updatePerformanceStats() {
+            const statsPopup = document.getElementById('stats-popup');
+            // Only update if stats popup is visible
+            if (statsPopup.style.display !== 'block') {
+                return;
+            }
+            
+            // Calculate FPS
+            const now = performance.now();
+            frameCount++;
+            
+            // Update FPS once per second
+            if (now - lastFpsUpdate >= 1000) {
+                currentFps = Math.round((frameCount * 1000) / (now - lastFpsUpdate));
+                document.getElementById('fps-value').textContent = currentFps;
+                frameCount = 0;
+                lastFpsUpdate = now;
+            }
+            
+            // Update memory usage if available
+            if (window.performance && performance.memory) {
+                const memory = performance.memory;
+                const totalMemoryMB = Math.round(memory.totalJSHeapSize / (1024 * 1024));
+                const usedMemoryMB = Math.round(memory.usedJSHeapSize / (1024 * 1024));
+                document.getElementById('memory-value').textContent = `${usedMemoryMB}MB / ${totalMemoryMB}MB`;
+            }
+            
+            // Update shadow memory estimation
+            if (directionalLight && directionalLight.shadow) {
+                const shadowMapSize = directionalLight.shadow.mapSize.width;
+                // Rough estimate: 4 bytes per pixel (RGBA) * width * height
+                const shadowMemoryMB = Math.round((shadowMapSize * shadowMapSize * 4) / (1024 * 1024));
+                document.getElementById('shadow-memory-value').textContent = `~${shadowMemoryMB}MB`;
+                document.getElementById('shadow-far-value').textContent = directionalLight.shadow.camera.far;
+            }
+            
+            // Update car position
+            if (car) {
+                const pos = car.position;
+                document.getElementById('position-value').textContent = `${pos.x.toFixed(1)}, ${pos.y.toFixed(1)}, ${pos.z.toFixed(1)}`;
+            }
+            
+            // Update light position
+            if (directionalLight) {
+                const pos = directionalLight.position;
+                document.getElementById('light-position-value').textContent = `${pos.x.toFixed(1)}, ${pos.y.toFixed(1)}, ${pos.z.toFixed(1)}`;
+            }
+            
+            // Update renderer stats
+            if (renderer && renderer.info) {
+                const info = renderer.info;
+                document.getElementById('drawcalls-value').textContent = info.render?.calls || 'N/A';
+                document.getElementById('triangles-value').textContent = info.render?.triangles || 'N/A';
+            }
+        }
+    </script>
+    
+    <!-- Stats Initialization Fix -->
+    <script>
+        // Force initialize stats functionality
+        window.addEventListener('DOMContentLoaded', function() {
+            console.log("Force initializing stats functionality");
+            const statsButton = document.getElementById('stats-button');
+            const statsPopup = document.getElementById('stats-popup');
+            
+            if (statsButton && statsPopup) {
+                console.log("Found stats elements, setting up handlers");
+                
+                // Ensure popup starts hidden
+                statsPopup.style.display = 'none';
+                
+                // Add direct click handler
+                statsButton.onclick = function() {
+                    console.log("Stats button clicked directly");
+                    if (statsPopup.style.display === 'none' || statsPopup.style.display === '') {
+                        statsPopup.style.display = 'block';
+                    } else {
+                        statsPopup.style.display = 'none';
+                    }
+                };
+                
+                // Add click handler for close button
+                const closeStats = document.getElementById('close-stats');
+                if (closeStats) {
+                    closeStats.onclick = function() {
+                        statsPopup.style.display = 'none';
+                    };
+                }
+                
+                console.log("Stats functionality initialized");
+            } else {
+                console.error("Could not find stats elements", { 
+                    statsButton: Boolean(statsButton), 
+                    statsPopup: Boolean(statsPopup) 
+                });
+            }
         });
     </script>
 </body>
