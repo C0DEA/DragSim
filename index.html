@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -1526,34 +1526,36 @@
             directionalLight.shadow.camera.projection = THREE.OrthographicCamera;
             
             // Add second directional light for distant shadows (beyond 296m)
-            const farDirectionalLight = new THREE.DirectionalLight(0xffffff, 1.8);
-            farDirectionalLight.position.set(-100, 300, 400); // Inverted X axis to match main light
-            farDirectionalLight.castShadow = true;
-            
+            // const farDirectionalLight = new THREE.DirectionalLight(0xffffff, 1.8);
+            // farDirectionalLight.position.set(-100, 300, 400); // Inverted X axis to match main light
+            // farDirectionalLight.castShadow = true;
+
             // Use larger shadow frustum
-            farDirectionalLight.shadow.camera.left = -750;
-            farDirectionalLight.shadow.camera.right = 750;
-            farDirectionalLight.shadow.camera.top = 750;
-            farDirectionalLight.shadow.camera.bottom = -750;
-            farDirectionalLight.shadow.camera.near = 0.5;
-            farDirectionalLight.shadow.camera.far = 10000; // Extended far distance for the distant areas
-            
+            // farDirectionalLight.shadow.camera.left = -750;
+            // farDirectionalLight.shadow.camera.right = 750;
+            // farDirectionalLight.shadow.camera.top = 750;
+            // farDirectionalLight.shadow.camera.bottom = -750;
+            // farDirectionalLight.shadow.camera.near = 0.5;
+            // farDirectionalLight.shadow.camera.far = 10000; // Extended far distance for the distant areas
+
             // Match shadow map resolution
-            farDirectionalLight.shadow.mapSize.width = 4096;
-            farDirectionalLight.shadow.camera.far = 5000; // Extended far distance for the distant areas
-            farDirectionalLight.shadow.mapSize.width = 4096;
-            farDirectionalLight.shadow.mapSize.height = 4096;
-            farDirectionalLight.shadow.bias = -0.00005;
-            farDirectionalLight.shadow.normalBias = 0.005;
-            
+            // farDirectionalLight.shadow.mapSize.width = 4096;
+            // farDirectionalLight.shadow.camera.far = 5000; // Extended far distance for the distant areas
+            // farDirectionalLight.shadow.mapSize.width = 4096;
+            // farDirectionalLight.shadow.mapSize.height = 4096;
+            // farDirectionalLight.shadow.bias = -0.00005;
+            // farDirectionalLight.shadow.normalBias = 0.005;
+
             // Add light targets for proper shadow direction
+            // farDirectionalLight.target = new THREE.Object3D();
+            // scene.add(farDirectionalLight.target);
+
+            // scene.add(farDirectionalLight);
+            
             directionalLight.target = new THREE.Object3D();
-            farDirectionalLight.target = new THREE.Object3D();
             scene.add(directionalLight.target);
-            scene.add(farDirectionalLight.target);
             
             scene.add(directionalLight);
-            scene.add(farDirectionalLight);
             
             // Add subtle hemisphere light for environment lighting
             const hemiLight = new THREE.HemisphereLight(0xffeebb, 0x080820, 0.4); // Warm sky, subtle blue-ish ground
@@ -2398,8 +2400,8 @@
             
             // Model paths - use absolute paths to ensure correct loading
             const palmModels = [
-                './assets/Curly_palm/scene.gltf',  // Curly palm - added ./ to ensure relative path
-                './assets/Date_palm/scene.gltf'    // Date palm - added ./ to ensure relative path
+                './Curly_palm/scene.gltf',  // Curly palm - removed assets/ prefix
+                './Date_palm/scene.gltf'    // Date palm - removed assets/ prefix
             ];
             
             console.debug(`Loading palm model from path: ${palmModels[palmType]}`);
